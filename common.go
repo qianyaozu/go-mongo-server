@@ -37,24 +37,18 @@ func loadRequest(w http.ResponseWriter, r *http.Request) PostData {
 	result, e := ioutil.ReadAll(r.Body)
 	if e != nil {
 		ResponseJson(w, nil, e)
-		var body PostData
-		body.Business = "-1"
-		return body
+		return PostData{Business:"-1"}
 	}
 	r.Body.Close()
 	var body PostData
 	json.Unmarshal(result, &body)
 	if body.DBName == "" {
 		ResponseJson(w, nil, errors.New("illegal data or illegal DBName type"))
-		var body PostData
-		body.Business = "-1"
-		return body
+		return PostData{Business:"-1"}
 	}
 	if body.Data == nil {
 		ResponseJson(w, nil, errors.New("body data is null"))
-		var body PostData
-		body.Business = "-1"
-		return body
+		return PostData{Business:"-1"}
 	}
 	if body.Key == "" {
 		body.Key = "id" //默认的数据表主键
