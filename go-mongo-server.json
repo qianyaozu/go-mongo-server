@@ -1,0 +1,6 @@
+{
+  "port": "30002",
+  "taskqueue": 100,
+  "mssql": "server=.\\qyz;user id=sa;password=sa;",
+  "mongodb": "127.0.0.1:27017"
+}
