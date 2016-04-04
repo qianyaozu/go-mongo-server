@@ -15,7 +15,7 @@ func main() {
 	defer common.Recovery("system")
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	ReadCondigFile() //读取配置文件
-	LockMaps=make(map[string]*sync.Mutex)
+	LockMaps = make(map[string]*sync.Mutex)    //初始化锁集合
 	http.HandleFunc("/", index)               //返回帮助页面
 	http.HandleFunc("/exists", exists)        //判断Id是否存在
 	http.HandleFunc("/count", count)          //获得总条数
