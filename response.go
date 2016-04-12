@@ -171,12 +171,14 @@ func add(w http.ResponseWriter, r *http.Request) {
 //			return
 //		}
 		var er error
+		session := InitMongo(body.Host)
+		defer session.Close()
 		if m, o := body.Data.(map[string]interface{}); o { //如果是新增一条数据
-			er = addFunc(m, body)
+			er = addFunc(m, body,session)
 		} else if m, o := body.Data.([]interface{}); o { //如果是批量新增
 			for i, _ := range m {
 				if t, ok := m[i].(map[string]interface{}); ok {
-					e := addFunc(t, body)
+					e := addFunc(t, body,session)
 					if er == nil {
 						er = e
 					}
@@ -191,32 +193,16 @@ func add(w http.ResponseWriter, r *http.Request) {
 }
 
 //插入到数据库
-func addFunc( m map[string]interface{}, body PostData) error {
-	session := InitMongo(body.Host)
-	defer session.Close()
+func addFunc( m map[string]interface{}, body PostData,session *mgo.Session) error {
 	collection := session.DB(body.DBName).C(body.Business)
 	m["timestamp"] = time.Now().Unix() //设置时间戳
 	if _, ok := m["_id"]; ok { //去除OnjectID列
-		 delete(m, "_id")
+		delete(m, "_id")
 	}
 	if body.Update {
 		if id, ok := m[body.Key]; ok {
-			c, e := collection.Find(bson.M{body.Key: id}).Count()
-			if e == nil {
-				if c == 0 {
-					err := collection.Insert(m) //插入数据
-					if err != nil {
-						return err
-					}
-				} else {
-					err := collection.Update(bson.M{body.Key: m[body.Key]}, bson.M{"$set": m}) //更新数据
-					if err != nil {
-						return err
-					}
-				}
-			} else {
-				return e
-			}
+			_, e := collection.Upsert(bson.M{body.Key: id}, bson.M{"$set": m})
+			return e
 		}else {
 			return errors.New("can't find the key from the json")
 		}
@@ -298,6 +284,19 @@ func upload(w http.ResponseWriter, r *http.Request) {
 }
 
 //下载文件
-func getFile(w http.ResponseWriter, r *http.Request){
-
+func getFile(w http.ResponseWriter, r *http.Request) {
+	//	http.StripPrefix("/file", http.FileServer(http.Dir("./upload/"))).ServeHTTP(w, r)
+	fileName := ""
+	if len(r.Form["f"]) > 0 {
+		fileName = r.Form["f"][0]
+	}
+	if fileName == "" {
+		w.Write([]byte("Error:fileName incorrect."))
+		return
+	}
+	if _, err := os.Stat(fileName); err != nil {
+		w.Write([]byte("Error:Image Not Found."))
+		return
+	}
+	http.ServeFile(w, r, fileName)
 }
